@@ -1,0 +1,3 @@
+__pycache__/
+.venv/
+/src/lua2meta/product_infos.txt
