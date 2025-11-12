@@ -77,22 +77,19 @@ jobs:
           VERSION=$(grep -oP '^\s*version\s*=\s*"\K[^"]*' pyproject.toml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Replace 'release' tag with version tag
+      - name: Delete 'release' tag
         run: |
           NEW_TAG="v${{ steps.version.outputs.version }}"
-          # Delete remote and local 'release' tag
-          git tag -d release || true
+          # Delete remote and local 'rel' tag
+          git tag -d rel || true
           git push origin :refs/tags/release || true
-          # Create version tag and push it
-          # git tag "$NEW_TAG"
-          # git push origin "$NEW_TAG"
 
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
           artifactErrorsFailBuild: true
           artifacts: dist/*.whl
-          commit: ${{ github.shA }}
+          commit: ${{ github.sha }}
           immutableCreate: true
           omitBody: true
           tag: ${{ steps.version.outputs.version }}
