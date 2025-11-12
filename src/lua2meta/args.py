@@ -10,7 +10,7 @@ _parser = argparse.ArgumentParser("lua2meta")
 _parser.add_argument(
     "lua",
     metavar="PATH",
-    help="Path to the lua file",
+    help="Path to the .lua file or .zip with lua and .manifest s",
     type=Path,
 )
 
