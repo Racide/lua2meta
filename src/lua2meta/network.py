@@ -1,11 +1,8 @@
 import errno
 import io
-import lzma
 import os
 from pathlib import Path
-from zipfile import ZipFile
 import zipfile
-import zlib
 
 import requests
 import requests.adapters
