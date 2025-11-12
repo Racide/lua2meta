@@ -38,8 +38,8 @@ jobs:
           # enable-cache: # optional, default is auto
           # Glob pattern to match files relative to the working directory to control the cache.
           cache-dependency-glob: | # optional, default is **/*requirements*.txt
-            /pyproject.toml
-            /uv.lock
+            pyproject.toml
+            uv.lock
 
           # Whether to restore the cache if found.
           # restore-cache: # optional, default is true
@@ -88,11 +88,9 @@ jobs:
           git push origin "$NEW_TAG"
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: "v${{ steps.version.outputs.version }}"
-          name: "Release v${{ steps.version.outputs.version }}"
-          files: |
-            dist/*.whl
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          artifactErrorsFailBuild: true
+          artifacts: dist/*.whl
+          immutableCreate: true
+          omitBody: true
