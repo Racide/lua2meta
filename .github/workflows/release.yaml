@@ -77,12 +77,6 @@ jobs:
           VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Create git tag for version
-        if: startsWith(github.ref, 'refs/tags/v') == false
-        run: |
-          git tag "v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
-
       - name: Replace 'release' tag with version tag
         run: |
           NEW_TAG="v${{ steps.version.outputs.version }}"
