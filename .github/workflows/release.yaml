@@ -92,7 +92,7 @@ jobs:
         with:
           artifactErrorsFailBuild: true
           artifacts: dist/*.whl
-          commit: ${{ GITHUB_SHA }}
+          commit: ${{ github.shA }}
           immutableCreate: true
           omitBody: true
           tag: ${{ steps.version.outputs.version }}
