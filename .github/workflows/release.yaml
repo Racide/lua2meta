@@ -80,9 +80,8 @@ jobs:
       - name: Delete 'release' tag
         run: |
           NEW_TAG="v${{ steps.version.outputs.version }}"
-          # Delete remote and local 'rel' tag
-          git tag -d rel || true
-          git push origin :refs/tags/release || true
+          # Delete remote 'rel' tag
+          git push origin :refs/tags/rel || true
 
       - name: Create release
         uses: ncipollo/release-action@v1
