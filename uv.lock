@@ -176,7 +176,7 @@ wheels = [
 
 [[package]]
 name = "lua2meta"
-version = "1.1.4"
+version = "1.1.5"
 source = { editable = "." }
 dependencies = [
     { name = "luaparser" },
@@ -187,7 +187,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "luaparser", git = "https://github.com/boolangery/py-lua-parser?tag=3.3.1" },
+    { name = "luaparser", git = "https://github.com/boolangery/py-lua-parser?rev=615322f0d3f7a7a736955327bcf03a90595cebdd" },
     { name = "steam", extras = ["client"], specifier = ">=1.4.4" },
     { name = "urlpath", specifier = ">=2.0.0" },
     { name = "vdf", specifier = ">=3.4" },
@@ -196,7 +196,7 @@ requires-dist = [
 [[package]]
 name = "luaparser"
 version = "3.3.1"
-source = { git = "https://github.com/boolangery/py-lua-parser?tag=3.3.1#615322f0d3f7a7a736955327bcf03a90595cebdd" }
+source = { git = "https://github.com/boolangery/py-lua-parser?rev=615322f0d3f7a7a736955327bcf03a90595cebdd#615322f0d3f7a7a736955327bcf03a90595cebdd" }
 dependencies = [
     { name = "antlr4-python3-runtime" },
     { name = "multimethod" },

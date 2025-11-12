@@ -8,7 +8,6 @@ import zipfile
 from pathlib import Path
 from subprocess import CalledProcessError
 
-# from lua2meta.lua.writer import ACFWriter
 from steam.client import SteamClient
 from steam.client.cdn import CDNClient
 
@@ -55,11 +54,11 @@ def load_input_content(path: Path) -> InputContent:
 def fetch_manifests(
     cdn_client: CDNClient,
     appid: int,
-    manifest_gids: DepotInfos,
+    manifest_infos: DepotInfos,
 ) -> DepotManifests:
     manifests: DepotManifests = {}
 
-    for depot, depot_info in manifest_gids.items():
+    for depot, depot_info in manifest_infos.items():
         try:
             manifest = fetch_manifest(cdn_client, appid, depot, depot_info.gid)
         except Exception:
@@ -180,7 +179,7 @@ def main():
                 upgradable_manifests = {
                     depot
                     for depot in manifests.keys() & depot_infos.keys()
-                    if manifests[depot].gid != depot_infos[depot]
+                    if manifests[depot].gid != depot_infos[depot].gid
                 }
                 for depot in upgradable_manifests:
                     print(f"Outdated manifest for depot {depot}")
