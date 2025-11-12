@@ -25,32 +25,31 @@ def load_input_content(path: Path) -> InputContent:
     if not path.suffix == ".zip":
         return InputContent(path.read_text(), {})
 
-    with zipfile.ZipFile(path) as zip:
-        namelist = zip.namelist()
-    zip = zipfile.Path(path)
-    lua_path: zipfile.Path | None = None
-    manifests: DepotManifests = {}
-    for child in (zip / path for path in namelist):
-        if child.is_file() and child.suffix == ".lua":
-            if lua_path:
-                print(f'Additional "{lua_path.name}" skipped')
-                continue
-            lua_path = child
-            print(f'Found "{lua_path.name}"')
-        if child.is_file() and child.suffix == ".manifest":
-            if not (
-                match := re.fullmatch(r"(?P<depot_id>\d+)_(?P<gid>\d+)", child.stem)
-            ):
-                # binary vdf parsing is reportedly broken in steam module,
-                # which is probably abandoned, can only automate on filenames
-                print(f'Unrecognized manifest filename "{child.name}"')
-                continue
-            manifests[int(match.group("depot_id"))] = Manifest(
-                int(match.group("gid")), child.read_bytes()
-            )
-    if not lua_path:
-        raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), "*.lua")
-    return InputContent(lua_path.read_text(), manifests)
+    with zipfile.ZipFile(path) as zip_file:
+        zip = zipfile.Path(zip_file)
+        lua_path: zipfile.Path | None = None
+        manifests: DepotManifests = {}
+        for child in (zip / path for path in zip_file.namelist()):
+            if child.is_file() and child.suffix == ".lua":
+                if lua_path:
+                    print(f'Additional "{lua_path.name}" skipped')
+                    continue
+                lua_path = child
+                print(f'Found "{lua_path.name}"')
+            if child.is_file() and child.suffix == ".manifest":
+                if not (
+                    match := re.fullmatch(r"(?P<depot_id>\d+)_(?P<gid>\d+)", child.stem)
+                ):
+                    # binary vdf parsing is reportedly broken in steam module,
+                    # which is probably abandoned, can only automate on filenames
+                    print(f'Unrecognized manifest filename "{child.name}"')
+                    continue
+                manifests[int(match.group("depot_id"))] = Manifest(
+                    int(match.group("gid")), child.read_bytes()
+                )
+        if not lua_path:
+            raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), "*.lua")
+        return InputContent(lua_path.read_text(), manifests)
 
 
 def fetch_manifests(

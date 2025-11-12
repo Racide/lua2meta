@@ -1,4 +1,11 @@
+import errno
+import io
+import lzma
+import os
 from pathlib import Path
+from zipfile import ZipFile
+import zipfile
+import zlib
 
 import requests
 import requests.adapters
@@ -74,6 +81,15 @@ def fetch_manifest_request_code(appid: int, depot: int, gid: int) -> str:
     return response.text
 
 
+def decompress_manifest(manifest: bytes):
+    with zipfile.ZipFile(io.BytesIO(manifest)) as zip_file:
+        zip = zipfile.Path(zip_file)
+        for child in (zip / path for path in zip_file.namelist()):
+            if child.is_file():
+                return child.read_bytes()
+    raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), "file")
+
+
 def fetch_manifest(
     cdn_client: CDNClient,
     appid: int,
@@ -97,4 +113,10 @@ def fetch_manifest(
     print(f"Download manifest from {url}")
     response = url.get()
     assert response.status_code == 200
-    return Manifest(gid, response.content)
+    manifest = response.content
+    try:
+        manifest = decompress_manifest(manifest)
+        print(f"Manifest {gid} decompressed")
+    except Exception:
+        print(f"Manifest {gid} likely uncompressed")
+    return Manifest(gid, manifest)
