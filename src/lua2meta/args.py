@@ -71,7 +71,7 @@ _parser.add_argument(
 _parser.add_argument(
     "-D",
     "--dry-download",
-    help="Print a CLI command instead of running the downloader",
+    help="print a CLI command instead of running the downloader",
     action="store_true",
 )
 
