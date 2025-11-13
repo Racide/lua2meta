@@ -16,6 +16,7 @@ from lua2meta.acf import write_acf
 from lua2meta.args import args
 from lua2meta.network import fetch_manifest, fetch_metadata
 from lua2meta.types import DepotInfos, DepotKeys, DepotManifests, InputContent, Manifest
+from lua2meta.utils import dict_intersect, dict_subtract
 
 
 def load_input_content(path: Path) -> InputContent:
@@ -36,16 +37,12 @@ def load_input_content(path: Path) -> InputContent:
                 lua_path = child
                 print(f'Found "{lua_path.name}"')
             if child.is_file() and child.suffix == ".manifest":
-                if not (
-                    match := re.fullmatch(r"(?P<depot_id>\d+)_(?P<gid>\d+)", child.stem)
-                ):
+                if not (match := re.fullmatch(r"(?P<depot_id>\d+)_(?P<gid>\d+)", child.stem)):
                     # binary vdf parsing is reportedly broken in steam module,
                     # which is probably abandoned, can only automate on filenames
                     print(f'Unrecognized manifest filename "{child.name}"')
                     continue
-                manifests[int(match.group("depot_id"))] = Manifest(
-                    int(match.group("gid")), child.read_bytes()
-                )
+                manifests[int(match.group("depot_id"))] = Manifest(int(match.group("gid")), child.read_bytes())
         if not lua_path:
             raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), "*.lua")
         return InputContent(lua_path.read_text(), manifests)
@@ -124,9 +121,7 @@ def main():
         try:
             args.api_url.format(appid=0, depotid=1, manifestid=2)
         except KeyError as ex:
-            print(
-                f"Invalid api endpoint template, used unknown placeholder: {ex.args[0]}"
-            )
+            print(f"Invalid api endpoint template, used unknown placeholder: {ex.args[0]}")
             return 1
         except ValueError:
             print('Invalid api endpoint template, try "--help" for more information')
@@ -147,12 +142,8 @@ def main():
         return 2
 
     if args.depots:
-        depot_keys: DepotKeys = {
-            depot: depot_keys[depot] for depot in args.depots if depot in depot_keys
-        }
-    manifests = {
-        depot: manifests[depot] for depot in manifests.keys() & depot_keys.keys()
-    }
+        depot_keys: DepotKeys = {depot: depot_keys[depot] for depot in args.depots if depot in depot_keys}
+    manifests = dict_intersect(manifests, depot_keys)
 
     if not args.offline:
         client = SteamClient()
@@ -165,39 +156,34 @@ def main():
             print("Failed fetch metadata from Steam")
             return 3
 
-        depot_infos = {
-            depot: depot_infos[depot]
-            for depot in depot_infos.keys() & depot_keys.keys()
-        }
+        for depot in depot_keys.keys() - depot_infos.keys():
+            print(f"Unknown depot {depot} will be skipped")
+        depot_keys = dict_intersect(depot_keys, depot_infos)
+        manifests = dict_intersect(manifests, depot_infos)
 
         if args.api_url:
-            remote_manifests = (
-                depot_keys.keys() - manifests.keys()
-            ) & depot_infos.keys()
+            remote_manifest_gids = depot_keys.keys() - manifests.keys()
 
             if args.update:
-                upgradable_manifests = {
-                    depot
-                    for depot in manifests.keys() & depot_infos.keys()
-                    if manifests[depot].gid != depot_infos[depot].gid
-                }
-                for depot in upgradable_manifests:
+                upgradable_manifest_gids = {depot for depot in manifests.keys() if manifests[depot].gid != depot_infos[depot].gid}
+                for depot in upgradable_manifest_gids:
                     print(f"Outdated manifest for depot {depot}")
-                remote_manifests |= upgradable_manifests
+                remote_manifest_gids |= upgradable_manifest_gids
 
             cdn_client = CDNClient(client)
             fetched_manifests = fetch_manifests(
                 cdn_client,
                 appid,
-                {depot: depot_infos[depot] for depot in remote_manifests},
+                dict_intersect(depot_infos, remote_manifest_gids),
             )
+            for depot in remote_manifest_gids - fetched_manifests.keys():
+                print(f"Failed to download manifest file for depot {depot}")
             manifests |= fetched_manifests
 
-            for depot in remote_manifests - fetched_manifests.keys():
-                print(f"Failed to download manifest file for depot {depot}")
+        depot_infos = dict_intersect(depot_infos, manifests)
 
     if lost_manifests := depot_keys.keys() - manifests.keys():
-        print("Failed to download necessary manifests for the following depots:")
+        print("Missing necessary manifests for the following depots:")
         print(", ".join(map(str, lost_manifests)))
         return 3
 

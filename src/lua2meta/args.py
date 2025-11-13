@@ -10,7 +10,7 @@ _parser = argparse.ArgumentParser("lua2meta")
 _parser.add_argument(
     "lua",
     metavar="PATH",
-    help="Path to the .lua file or .zip with lua and .manifest s",
+    help="path to the .lua file or .zip with lua and .manifest s",
     type=Path,
 )
 
@@ -18,7 +18,7 @@ _parser.add_argument(
     "--depots",
     nargs="+",
     metavar="DEPOT-ID",
-    help="Filter to the given depot ids. All depots in the lua file are processed if not set",
+    help="filter to the given depot ids. All depots in the lua file are processed if not set",
     type=int,
 )
 
@@ -26,7 +26,7 @@ _parser.add_argument(
     "-o",
     "--out-dir",
     metavar="PATH",
-    help="Path to the directory where .manifest and .acf files will be written to",
+    help="path to the directory where .manifest and .acf files will be written to",
     default=".",
     type=Path,
 )
@@ -34,7 +34,7 @@ _parser.add_argument(
 _parser.add_argument(
     "--acf-dir",
     metavar="PATH",
-    help="Override the directory where the .acf file will be written to",
+    help="override the directory where the .acf file will be written to",
     type=Path,
 )
 
@@ -42,14 +42,14 @@ _parser.add_argument(
 _parser.add_argument(
     "-f",
     "--offline",
-    help="Do not fetch from network. No .acf will be generated",
+    help="do not fetch from network. No .acf will be generated",
     action="store_true",
 )
 
 _parser.add_argument(
     "-u",
     "--update",
-    help="Prefer cdn manifests over bundled, in case of gid mismatch",
+    help="prefer cdn manifests over bundled, in case of gid mismatch",
     action="store_true",
 )
 
@@ -64,7 +64,7 @@ _parser.add_argument(
     "-d",
     "--download-dir",
     metavar="PATH",
-    help="Use DepotDownloaderMod to download the depots to the specified directory",
+    help="use DepotDownloaderMod to download the depots to the specified directory",
     type=Path,
 )
 
@@ -86,7 +86,7 @@ _parser.add_argument(
 _parser.add_argument(
     "--downloader-args",
     metavar="ARGS",
-    help="Additional arguments to pass to the downloader, as a single string",
+    help="additional arguments to pass to the downloader, as a single string",
 )
 
 

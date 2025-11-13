@@ -34,7 +34,7 @@ class CallVisitor(ast.ASTVisitor):
                 if not isinstance(node.args[2], ast.String):
                     return
                 self.depots[node.args[0].n] = node.args[2].s
-                print(f"parsed depot {node.args[0].n}:{node.args[2].s}")
+                print(f"Parsed depot {node.args[0].n}:{node.args[2].s}")
 
 
 def parse(src: str) -> tuple[int, DepotKeys]:
