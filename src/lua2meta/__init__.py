@@ -16,7 +16,7 @@ from lua2meta.acf import write_acf
 from lua2meta.args import args
 from lua2meta.network import fetch_manifest, fetch_metadata
 from lua2meta.types import DepotInfos, DepotKeys, DepotManifests, InputContent, Manifest
-from lua2meta.utils import dict_intersect, dict_subtract
+from lua2meta.utils import dict_intersect
 
 
 def load_input_content(path: Path) -> InputContent:
