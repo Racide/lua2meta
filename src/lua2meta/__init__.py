@@ -70,9 +70,9 @@ def write_manifests(manifests: DepotManifests):
         (args.out_dir / f"{depot}_{gid}.manifest").write_bytes(content)
 
 
-def write_keylist(depot_keys: DepotKeys):
+def write_keylist(appid: int, depot_keys: DepotKeys):
     s = "\n".join(f"{depot};{key}" for depot, key in depot_keys.items())
-    (args.out_dir / "keys.txt").write_text(s)
+    (args.out_dir / f"{appid}_keys.txt").write_text(s)
 
 
 def download(appid: int, manifests: DepotManifests, download_dir: Path):
@@ -195,7 +195,7 @@ def main():
             return 4
 
     try:
-        write_keylist(depot_keys)
+        write_keylist(appid, depot_keys)
         write_manifests(manifests)
     except Exception:
         print(f"Failed to write output to {args.out_dir.absolute()}")
