@@ -16,7 +16,7 @@ from lua2meta.acf import write_acf
 from lua2meta.args import args
 from lua2meta.network import fetch_manifest, fetch_metadata
 from lua2meta.types import DepotInfos, DepotKeys, DepotManifests, InputContent, Manifest
-from lua2meta.utils import dict_intersect
+from lua2meta.utils import dict_copyorder, dict_intersect
 
 
 def load_input_content(path: Path) -> InputContent:
@@ -178,9 +178,10 @@ def main():
             )
             for depot in remote_manifest_gids - fetched_manifests.keys():
                 print(f"Failed to download manifest file for depot {depot}")
-            manifests |= fetched_manifests
+            manifests |= fetched_manifests  # breaks ordering
 
         depot_infos = dict_intersect(depot_infos, manifests)
+        manifests = dict_copyorder(manifests, depot_infos)
 
     if lost_manifests := depot_keys.keys() - manifests.keys():
         print("Missing necessary manifests for the following depots:")
@@ -208,7 +209,7 @@ def main():
             Path(str(appid)) if args.offline else app_info.install_dir,  # pyright: ignore[reportPossiblyUnboundVariable]
         )
     except CalledProcessError as ex:
-        print(f"\nDownloader terminated with a non-zero error {ex.returncode}")
+        print(f"\nDownloader terminated with a non-zero status {ex.returncode}")
         return 5
     except Exception:
         print(f"Failed to download in {args.download_dir.absolute()}")
