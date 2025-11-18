@@ -84,7 +84,7 @@ def download(appid: int, manifests: DepotManifests, download_dir: Path):
     argv[1] = "-app"
     argv[2] = str(appid)
     argv[3] = "-depotkeys"
-    argv[4] = str(args.out_dir / "keys.txt")
+    argv[4] = str(args.out_dir / f"{appid}_keys.txt")
     argv[5] = "-depot"
     argv[6] = "DEPOT PLACEHOLDER"
     argv[7] = "-manifestfile"
