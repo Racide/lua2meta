@@ -61,6 +61,14 @@ _parser.add_argument(
 )
 
 _parser.add_argument(
+    "-c",
+    "--config",
+    metavar="PATH",
+    help="path to the config .vdf file where depot keys will be added",
+    type=Path,
+)
+
+_parser.add_argument(
     "-d",
     "--download-dir",
     metavar="PATH",
@@ -99,6 +107,7 @@ class Args:
     offline: bool
     update: bool
     api_url: str
+    config: Path
     download_dir: Path
     dry_download: bool
     downloader: Path

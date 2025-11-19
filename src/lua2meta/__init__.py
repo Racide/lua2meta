@@ -2,6 +2,7 @@ import errno
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -12,7 +13,7 @@ from steam.client import SteamClient
 from steam.client.cdn import CDNClient
 
 from lua2meta import lua_parser
-from lua2meta.acf import write_acf
+from lua2meta import vdf
 from lua2meta.args import args
 from lua2meta.network import fetch_manifest, fetch_metadata
 from lua2meta.types import DepotInfos, DepotKeys, DepotManifests, InputContent, Manifest
@@ -58,8 +59,9 @@ def fetch_manifests(
     for depot, depot_info in manifest_infos.items():
         try:
             manifest = fetch_manifest(cdn_client, appid, depot, depot_info.gid)
-        except Exception:
-            print(f"Failed to fetch manifest {depot_info.gid} for depot {depot}")
+        except Exception as ex:
+            print(f"Failed to fetch manifest {depot_info.gid} for depot {depot}:")
+            print(ex)
             continue
         manifests[depot] = manifest
     return manifests
@@ -75,9 +77,23 @@ def write_keylist(appid: int, depot_keys: DepotKeys):
     (args.out_dir / f"{appid}_keys.txt").write_text(s)
 
 
-def download(appid: int, manifests: DepotManifests, download_dir: Path):
-    download_dir = args.download_dir / download_dir
-    download_dir.mkdir(exist_ok=True)
+def update_config(depot_keys: DepotKeys):
+    backup_config = args.config.with_suffix(".bak.vdf")
+    try:
+        shutil.copyfile(args.config, backup_config)
+    except Exception:
+        print(f"Failed to create backup at {backup_config}, abort:")
+        raise
+    try:
+        vdf.write_config(depot_keys)
+    except Exception:
+        print(f"Failed to update config .vdf file at {args.config},")
+        print(f"backup available at {backup_config}:")
+        raise
+
+
+def download(appid: int, manifests: DepotManifests, download_dir_name: Path):
+    download_dir = args.download_dir / download_dir_name
 
     argv: list[str] = [""] * 11
     argv[0] = str(args.downloader)
@@ -97,8 +113,10 @@ def download(appid: int, manifests: DepotManifests, download_dir: Path):
     for depot, (gid, _) in manifests.items():
         argv[6] = str(depot)
         argv[8] = str(args.out_dir / f"{depot}_{gid}.manifest")
-        print(*(f'"{arg}"' if " " in arg else arg for arg in argv), "\n\\/\n")
+        print(*(f'"{arg}"' if " " in arg else arg for arg in argv))
         if not args.dry_download:
+            download_dir.mkdir(exist_ok=True)
+            print("\\/\n")
             subprocess.run(argv, check=True)
 
 
@@ -110,6 +128,9 @@ def main():
         args.acf_dir = args.out_dir
     if not args.acf_dir.is_dir():
         print(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.out_dir)))
+        return 1
+    if args.config and not args.config.is_file():
+        print(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.config)))
         return 1
     if args.download_dir is None:
         args.download_dir = args.out_dir
@@ -188,19 +209,27 @@ def main():
         print(", ".join(map(str, lost_manifests)))
         return 3
 
-    if not args.offline:
-        try:
-            write_acf(app_info, depot_infos)  # pyright: ignore[reportPossiblyUnboundVariable]
-        except Exception:
-            print(f"Failed to write .acf file to {args.acf_dir}")
-            return 4
-
     try:
         write_keylist(appid, depot_keys)
         write_manifests(manifests)
-    except Exception:
-        print(f"Failed to write output to {args.out_dir.absolute()}")
+    except Exception as ex:
+        print(f"Failed to write output to {args.out_dir.absolute()}:")
+        print(ex)
         return 4
+
+    if not args.offline:
+        try:
+            vdf.write_acf(app_info, depot_infos)  # pyright: ignore[reportPossiblyUnboundVariable]
+        except Exception as ex:
+            print(f"Failed to write .acf file to {args.acf_dir}:")
+            print(ex)
+            return 4
+        if args.config:
+            try:
+                update_config(depot_keys)
+            except Exception as ex:
+                print(ex)
+                print("Try updating the config .vdf file manually")
 
     try:
         download(
@@ -210,9 +239,10 @@ def main():
         )
     except CalledProcessError as ex:
         print(f"\nDownloader terminated with a non-zero status {ex.returncode}")
-        return 5
-    except Exception:
-        print(f"Failed to download in {args.download_dir.absolute()}")
+        return 6
+    except Exception as ex:
+        print(f"Failed to download in {args.download_dir.absolute()}:")
+        print(ex)
 
     return 0
 
