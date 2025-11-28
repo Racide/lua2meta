@@ -1,6 +1,6 @@
 [project]
 name = "lua2meta"
-version = "1.2.0"
+version = "1.2.1"
 description = "Decrypt steam manifest files"
 readme = "README.md"
 requires-python = ">=3.13"

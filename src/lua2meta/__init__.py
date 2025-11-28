@@ -95,24 +95,25 @@ def update_config(depot_keys: DepotKeys):
 def download(appid: int, manifests: DepotManifests, download_dir_name: Path):
     download_dir = args.download_dir / download_dir_name
 
-    argv: list[str] = [""] * 11
+    argv: list[str] = [""] * 12
     argv[0] = str(args.downloader)
     argv[1] = "-app"
     argv[2] = str(appid)
-    argv[3] = "-depotkeys"
-    argv[4] = str(args.out_dir / f"{appid}_keys.txt")
-    argv[5] = "-depot"
-    argv[6] = "DEPOT PLACEHOLDER"
-    argv[7] = "-manifestfile"
-    argv[8] = "MANIFESTFILE PLACEHOLDER"
-    argv[9] = "-dir"
-    argv[10] = str(download_dir)
+    argv[3] = "-depot"
+    argv[4] = "DEPOT PLACEHOLDER"
+    argv[5] = "-validate"
+    argv[6] = "-depotkeys"
+    argv[7] = str(args.out_dir / f"{appid}_keys.txt")
+    argv[8] = "-manifestfile"
+    argv[9] = "MANIFESTFILE PLACEHOLDER"
+    argv[10] = "-dir"
+    argv[11] = str(download_dir)
     if args.downloader_args:
         argv += shlex.split(args.downloader_args)
 
     for depot, (gid, _) in manifests.items():
-        argv[6] = str(depot)
-        argv[8] = str(args.out_dir / f"{depot}_{gid}.manifest")
+        argv[4] = str(depot)
+        argv[9] = str(args.out_dir / f"{depot}_{gid}.manifest")
         print(*(f'"{arg}"' if " " in arg else arg for arg in argv))
         if not args.dry_download:
             download_dir.mkdir(exist_ok=True)
