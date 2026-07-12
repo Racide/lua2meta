@@ -12,6 +12,7 @@ from steam.client.cdn import CDNClient, ContentServer
 from urlpath import URL
 
 from lua2meta.args import args
+from lua2meta.logger import logger
 from lua2meta.types import AppInfo, DepotInfo, DepotInfos, Manifest
 
 __all__ = ["fetch_manifest"]
@@ -72,7 +73,7 @@ def fetch_metadata(client: SteamClient, appid: int) -> tuple[AppInfo, DepotInfos
 
 def fetch_manifest_request_code(appid: int, depot: int, gid: int) -> str:
     url = args.api_url.format(appid=appid, depotid=depot, manifestid=gid)
-    print(f"Fetching request code from: {url}")
+    logger.info(f"Fetching request code from: {url}")
     response = mrc_session.get(url, timeout=10)
     assert response.status_code == 200
     return response.text
@@ -102,18 +103,18 @@ def fetch_manifest(
     try:
         code = fetch_manifest_request_code(appid, depot, gid)
     except Exception:
-        print("Failed to retrieve manifest request code")
+        logger.error("Failed to retrieve manifest request code")
         raise
 
     url: URL = server_url / "depot" / depot / "manifest" / gid / 5 / code
 
-    print(f"Download manifest from {url}")
+    logger.info(f"Download manifest from {url}")
     response = url.get()
     assert response.status_code == 200
     manifest = response.content
     try:
         manifest = decompress_manifest(manifest)
-        print(f"Manifest {gid} decompressed")
+        logger.info(f"Manifest {gid} decompressed")
     except Exception:
-        print(f"Manifest {gid} likely uncompressed")
+        logger.info(f"Manifest {gid} likely uncompressed")
     return Manifest(gid, manifest)

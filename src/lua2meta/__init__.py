@@ -12,6 +12,7 @@ from subprocess import CalledProcessError
 from steam.client import SteamClient
 from steam.client.cdn import CDNClient
 
+from lua2meta.logger import logger
 from lua2meta import lua_parser
 from lua2meta import vdf
 from lua2meta.args import args
@@ -33,15 +34,15 @@ def load_input_content(path: Path) -> InputContent:
         for child in (zip / path for path in zip_file.namelist()):
             if child.is_file() and child.suffix == ".lua":
                 if lua_path:
-                    print(f'Additional "{lua_path.name}" skipped')
+                    logger.warning(f'Additional "{lua_path.name}" skipped')
                     continue
                 lua_path = child
-                print(f'Found "{lua_path.name}"')
+                logger.info(f'Found "{lua_path.name}"')
             if child.is_file() and child.suffix == ".manifest":
                 if not (match := re.fullmatch(r"(?P<depot_id>\d+)_(?P<gid>\d+)", child.stem)):
                     # binary vdf parsing is reportedly broken in steam module,
                     # which is probably abandoned, can only automate on filenames
-                    print(f'Unrecognized manifest filename "{child.name}"')
+                    logger.warning(f'Unrecognized manifest filename "{child.name}"')
                     continue
                 manifests[int(match.group("depot_id"))] = Manifest(int(match.group("gid")), child.read_bytes())
         if not lua_path:
@@ -60,8 +61,8 @@ def fetch_manifests(
         try:
             manifest = fetch_manifest(cdn_client, appid, depot, depot_info.gid)
         except Exception as ex:
-            print(f"Failed to fetch manifest {depot_info.gid} for depot {depot}:")
-            print(ex)
+            logger.error(f"Failed to fetch manifest {depot_info.gid} for depot {depot}:")
+            logger.error(ex)
             continue
         manifests[depot] = manifest
     return manifests
@@ -82,13 +83,12 @@ def update_config(depot_keys: DepotKeys):
     try:
         shutil.copyfile(args.config, backup_config)
     except Exception:
-        print(f"Failed to create backup at {backup_config}, abort:")
+        logger.error(f"Failed to create backup at {backup_config}, abort:")
         raise
     try:
         vdf.write_config(depot_keys)
     except Exception:
-        print(f"Failed to update config .vdf file at {args.config},")
-        print(f"backup available at {backup_config}:")
+        logger.error(f"Failed to update config .vdf file at {args.config}, backup available at {backup_config}:")
         raise
 
 
@@ -123,44 +123,45 @@ def download(appid: int, manifests: DepotManifests, download_dir_name: Path):
 
 def main():
     if not args.out_dir.is_dir():
-        print(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.out_dir)))
+        logger.error(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.out_dir)))
         return 1
     if args.acf_dir is None:
         args.acf_dir = args.out_dir
     if not args.acf_dir.is_dir():
-        print(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.out_dir)))
+        logger.error(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.out_dir)))
         return 1
     if args.config and not args.config.is_file():
-        print(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.config)))
+        logger.error(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.config)))
         return 1
     if args.download_dir is None:
         args.download_dir = args.out_dir
     if not args.download_dir.is_dir():
-        print(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.out_dir)))
+        logger.error(OSError(errno.ENOENT, os.strerror(errno.ENOENT), str(args.out_dir)))
         return 1
 
     if args.api_url:
+        # validate api_url template
         try:
             args.api_url.format(appid=0, depotid=1, manifestid=2)
         except KeyError as ex:
-            print(f"Invalid api endpoint template, used unknown placeholder: {ex.args[0]}")
+            logger.error(f"Invalid api endpoint template, used unknown placeholder: {ex.args[0]}")
             return 1
         except ValueError:
-            print('Invalid api endpoint template, try "--help" for more information')
+            logger.error('Invalid api endpoint template, try "--help" for more information')
             return 1
 
     try:
         lua_src, manifests = load_input_content(args.lua)
     except Exception as ex:
-        print("Attempting to open lua source file resulted in the following error:")
-        print(ex)
+        logger.error("Attempting to open lua source file resulted in the following error:")
+        logger.error(ex)
         return 2
 
     try:
         appid, depot_keys = lua_parser.parse(lua_src)
     except Exception as ex:
-        print("Attempting to parse lua source file resulted in the following error:")
-        print(ex)
+        logger.error("Attempting to parse lua source file resulted in the following error:")
+        logger.error(ex)
         return 2
 
     if args.depots:
@@ -170,16 +171,16 @@ def main():
     if not args.offline:
         client = SteamClient()
         client.anonymous_login()
-        print("Logged in anonymously")
+        logger.info("Logged in anonymously")
 
         try:
             app_info, depot_infos = fetch_metadata(client, appid)
         except Exception:
-            print("Failed fetch metadata from Steam")
+            logger.error("Failed fetch metadata from Steam")
             return 3
 
         for depot in depot_keys.keys() - depot_infos.keys():
-            print(f"Unknown depot {depot} will be skipped")
+            logger.warning(f"Unknown depot {depot} will be skipped")
         depot_keys = dict_intersect(depot_keys, depot_infos)
         manifests = dict_intersect(manifests, depot_infos)
 
@@ -189,7 +190,7 @@ def main():
             if args.update:
                 upgradable_manifest_gids = {depot for depot in manifests.keys() if manifests[depot].gid != depot_infos[depot].gid}
                 for depot in upgradable_manifest_gids:
-                    print(f"Outdated manifest for depot {depot}")
+                    logger.info(f"Outdated manifest for depot {depot}")
                 remote_manifest_gids |= upgradable_manifest_gids
 
             cdn_client = CDNClient(client)
@@ -199,38 +200,38 @@ def main():
                 dict_intersect(depot_infos, remote_manifest_gids),
             )
             for depot in remote_manifest_gids - fetched_manifests.keys():
-                print(f"Failed to download manifest file for depot {depot}")
+                logger.error(f"Failed to download manifest file for depot {depot}")
             manifests |= fetched_manifests  # breaks ordering
 
         depot_infos = dict_intersect(depot_infos, manifests)
         manifests = dict_copyorder(manifests, depot_infos)
 
     if lost_manifests := depot_keys.keys() - manifests.keys():
-        print("Missing necessary manifests for the following depots:")
-        print(", ".join(map(str, lost_manifests)))
+        logger.error("Missing necessary manifests for the following depots:")
+        logger.error(", ".join(map(str, lost_manifests)))
         return 3
 
     try:
         write_keylist(appid, depot_keys)
         write_manifests(manifests)
     except Exception as ex:
-        print(f"Failed to write output to {args.out_dir.absolute()}:")
-        print(ex)
+        logger.error(f"Failed to write output to {args.out_dir.absolute()}:")
+        logger.error(ex)
         return 4
 
     if not args.offline:
         try:
             vdf.write_acf(app_info, depot_infos)  # pyright: ignore[reportPossiblyUnboundVariable]
         except Exception as ex:
-            print(f"Failed to write .acf file to {args.acf_dir}:")
-            print(ex)
+            logger.error(f"Failed to write .acf file to {args.acf_dir}:")
+            logger.error(ex)
             return 4
         if args.config:
             try:
                 update_config(depot_keys)
             except Exception as ex:
-                print(ex)
-                print("Try updating the config .vdf file manually")
+                logger.error("Try updating the config .vdf file manually")
+                logger.error(ex)
 
     try:
         download(
@@ -239,11 +240,11 @@ def main():
             Path(str(appid)) if args.offline else app_info.install_dir,  # pyright: ignore[reportPossiblyUnboundVariable]
         )
     except CalledProcessError as ex:
-        print(f"\nDownloader terminated with a non-zero status {ex.returncode}")
+        logger.error(f"\nDownloader terminated with a non-zero status {ex.returncode}")
         return 6
     except Exception as ex:
-        print(f"Failed to download in {args.download_dir.absolute()}:")
-        print(ex)
+        logger.error(f"Failed to download in {args.download_dir.absolute()}:")
+        logger.error(ex)
 
     return 0
 

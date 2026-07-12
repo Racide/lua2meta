@@ -1,6 +1,6 @@
 [project]
 name = "lua2meta"
-version = "1.2.1"
+version = "1.3.0"
 description = "Decrypt steam manifest files"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -8,9 +8,7 @@ dependencies = [
     "steam[client]>=1.4.4",
     "urlpath>=2.0.0",
     "vdf>=3.4",
-    # "luaparser>=3.3.1",
-    # This yet unreleased version removes unwarranted AST prints
-    "luaparser@git+https://github.com/boolangery/py-lua-parser@615322f0d3f7a7a736955327bcf03a90595cebdd",
+    "luaparser>=4.0.1",
 ]
 
 [project.scripts]

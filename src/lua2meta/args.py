@@ -15,6 +15,12 @@ _parser.add_argument(
 )
 
 _parser.add_argument(
+    "--appid",
+    metavar="APPID",
+    help="provide the appid and avoid guessing from the .lua file",
+    type=int,
+)
+_parser.add_argument(
     "--depots",
     nargs="+",
     metavar="DEPOT-ID",
@@ -101,6 +107,7 @@ _parser.add_argument(
 @dataclass
 class Args:
     lua: Path
+    appid: int
     depots: list[int]
     out_dir: Path
     acf_dir: Path
