@@ -3,15 +3,14 @@
 This tool retrieves metadata files associated with a .lua file and processes for archival use.
 
 ```txt
-usage: lua2meta [-h] [--depots DEPOT-ID [DEPOT-ID ...]] [-o PATH] [--acf-dir PATH] [-f] [-u] [-a TEMPLATE] [-c PATH] [-d PATH] [-D] [--downloader PATH]
-                [--downloader-args ARGS]
-                PATH
+usage: lua2meta [-h] [--appid APPID] [--depots DEPOT-ID [DEPOT-ID ...]] [-o PATH] [--acf-dir PATH] [-f] [-u] [-a TEMPLATE] [-c PATH] [-d PATH] [-D] [--downloader PATH] [--downloader-args ARGS] PATH
 
 positional arguments:
   PATH                  path to the .lua file or .zip with lua and .manifest s
 
 options:
   -h, --help            show this help message and exit
+  --appid APPID         provide the appid and avoid guessing from the .lua file
   --depots DEPOT-ID [DEPOT-ID ...]
                         filter to the given depot ids. All depots in the lua file are processed if not set
   -o, --out-dir PATH    path to the directory where .manifest and .acf files will be written to
