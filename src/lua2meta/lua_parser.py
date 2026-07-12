@@ -29,21 +29,22 @@ class CallVisitor(last.ASTVisitor):
             case 1:
                 if not isinstance(node.args[0], astnodes.Number):
                     return
-                t: int = node.args[0].n
+                appid: int = node.args[0].n
                 if self.appid is not None:
-                    logger.warning(f"Duplicate appid found in lua file, skipping {t}")
+                    logger.warning(f"Duplicate appid found in lua file, skipping {appid}")
                     return
-                self.appid = t
+                self.appid = appid
             case 3:
                 if not isinstance(node.args[0], astnodes.Number):
                     return
                 if not isinstance(node.args[2], astnodes.String):
                     return
-                t: int = node.args[0].n
+                appid: int = node.args[0].n
+                key: str = node.args[2].s.decode("utf-8")
                 if self.first_depot is None:
-                    self.first_depot = t
-                self.depots[t] = node.args[2].s
-                logger.info(f"Parsed depot {t}:{node.args[2].s}")
+                    self.first_depot = appid
+                self.depots[appid] = key
+                logger.info(f"Parsed depot {appid}:{key}")
 
 
 def parse(src: str) -> tuple[int, DepotKeys]:
